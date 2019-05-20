@@ -41,7 +41,7 @@ namespace Pooling.AppConsole
 
                 await Task.WhenAll(tl);
 
-                Console.WriteLine(bigListPool.Count());
+                Console.WriteLine(bigListPool.Count);
             });
 
             Console.ReadLine();

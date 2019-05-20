@@ -5,20 +5,18 @@ namespace Pooling
 {
     public sealed class Pool<T>
     {
-        private ConcurrentBag<T> _items =
-            new ConcurrentBag<T>();
-
-        private readonly Func<T> _itemCreator = null;
-        private readonly Action<T> _itemClearer = null;
+        readonly ConcurrentBag<T> _items = new ConcurrentBag<T>();
+        readonly Func<T> _itemCreator = null;
+        readonly Action<T> _itemClearer = null;
 
         public Pool(Func<T> itemCreator)
         {
-            _itemCreator = itemCreator ?? throw new ArgumentNullException("itemCreator");
+            _itemCreator = itemCreator ?? throw new ArgumentNullException(nameof(itemCreator));
         }
 
         public Pool(Func<T> itemCreator, Action<T> itemClearer) : this(itemCreator)
         {
-            _itemClearer = itemClearer ?? throw new ArgumentNullException("itemClearer");
+            _itemClearer = itemClearer ?? throw new ArgumentNullException(nameof(itemClearer));
         }
 
         public T Rent()
@@ -36,9 +34,6 @@ namespace Pooling
             _items.Add(item);
         }
 
-        public int Count()
-        {
-            return _items.Count;
-        }
+        public int Count => _items.Count;
     }
 }
