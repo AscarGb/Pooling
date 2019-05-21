@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Threading;
 
 namespace Pooling
 {
@@ -8,15 +9,21 @@ namespace Pooling
         readonly ConcurrentBag<T> _items = new ConcurrentBag<T>();
         readonly Func<T> _itemCreator = null;
         readonly Action<T> _itemClearer = null;
+        readonly int _maxItems;
+        SpinLock _lock;
 
-        public Pool(Func<T> itemCreator)
+        public Pool(Func<T> itemCreator, int maxItems)
         {
-            _itemCreator = itemCreator ?? throw new ArgumentNullException(nameof(itemCreator));
+            _itemCreator = itemCreator
+                ?? throw new ArgumentNullException(nameof(itemCreator));
+
+            _maxItems = maxItems;
         }
 
-        public Pool(Func<T> itemCreator, Action<T> itemClearer) : this(itemCreator)
+        public Pool(Func<T> itemCreator, Action<T> itemClearer, int maxItems) : this(itemCreator, maxItems)
         {
-            _itemClearer = itemClearer ?? throw new ArgumentNullException(nameof(itemClearer));
+            _itemClearer = itemClearer
+                ?? throw new ArgumentNullException(nameof(itemClearer));
         }
 
         public Pooled<T> Rent()
@@ -35,7 +42,19 @@ namespace Pooling
         {
             _itemClearer?.Invoke(item);
 
-            _items.Add(item);
+            bool lockTaken = false;
+            try
+            {
+                _lock.Enter(ref lockTaken);
+
+                if (Count < _maxItems)
+                    _items.Add(item);
+            }
+            finally
+            {
+                if (lockTaken)
+                    _lock.Exit();
+            }
         }
 
         public int Count => _items.Count;

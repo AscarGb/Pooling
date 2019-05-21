@@ -11,13 +11,13 @@ namespace Pooling.AppConsole
             Console.WriteLine("press to start");
             Console.ReadLine();
 
-            var bigListPool = new Pool<List<long>>(Creator, Clearer);
+            var bigListPool = new Pool<List<long>>(Creator, Clearer, 10);
 
             Task.Run(async () =>
             {
                 List<Task> tl = new List<Task>();
 
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < 10000; i++)
                 {
                     var task = Task.Run(() =>
                     {
