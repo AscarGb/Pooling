@@ -40,15 +40,16 @@ namespace Pooling
 
         public void Return(T item)
         {
-            _itemClearer?.Invoke(item);
-
             bool lockTaken = false;
             try
             {
                 _lock.Enter(ref lockTaken);
 
                 if (Count < _maxItems)
+                {
+                    _itemClearer?.Invoke(item);
                     _items.Add(item);
+                }
             }
             finally
             {
