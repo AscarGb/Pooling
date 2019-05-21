@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Pooling.AppConsole
@@ -17,13 +18,14 @@ namespace Pooling.AppConsole
             {
                 List<Task> tl = new List<Task>();
 
-                for (int i = 0; i < 10000; i++)
+                for (int i = 0; i < 100; i++)
                 {
-                    var task = Task.Run(() =>
+                    var task = Task.Run(async () =>
                     {
                         using (var pooledList = bigListPool.Rent())
-                        {
+                        {                            
                             var list = pooledList.item;
+                            await Task.Delay(1000);
                         }
                     });
 

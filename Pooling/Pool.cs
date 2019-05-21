@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 
 namespace Pooling
@@ -20,7 +21,8 @@ namespace Pooling
             _maxItems = maxItems;
         }
 
-        public Pool(Func<T> itemCreator, Action<T> itemClearer, int maxItems) : this(itemCreator, maxItems)
+        public Pool(Func<T> itemCreator, Action<T> itemClearer, int maxItems)
+            : this(itemCreator, maxItems)
         {
             _itemClearer = itemClearer
                 ?? throw new ArgumentNullException(nameof(itemClearer));
@@ -48,7 +50,9 @@ namespace Pooling
                 if (Count < _maxItems)
                 {
                     _itemClearer?.Invoke(item);
-                    _items.Add(item);
+
+                    if (!_items.Contains(item))
+                        _items.Add(item);
                 }
             }
             finally
@@ -59,26 +63,5 @@ namespace Pooling
         }
 
         public int Count => _items.Count;
-    }
-
-    public class Pooled<T> : IDisposable
-    {
-        readonly Pool<T> _pool;
-        public readonly T item;
-        public Pooled(T item, Pool<T> pool)
-        {
-            this.item = item;
-            _pool = pool;
-        }
-
-        private bool disposedValue = false;
-        public void Dispose()
-        {
-            if (!disposedValue)
-            {
-                _pool.Return(item);
-                disposedValue = true;
-            }
-        }
     }
 }
