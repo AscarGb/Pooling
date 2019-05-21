@@ -19,12 +19,16 @@ namespace Pooling
             _itemClearer = itemClearer ?? throw new ArgumentNullException(nameof(itemClearer));
         }
 
-        public T Rent()
+        public Pooled<T> Rent()
         {
-            if (_items.TryTake(out var item))
-                return item;
+            T rented;
 
-            return _itemCreator();
+            if (_items.TryTake(out var item))
+                rented = item;
+            else
+                rented = _itemCreator();
+
+            return new Pooled<T>(rented, this);
         }
 
         public void Return(T item)
@@ -35,5 +39,26 @@ namespace Pooling
         }
 
         public int Count => _items.Count;
+    }
+
+    public class Pooled<T> : IDisposable
+    {
+        readonly Pool<T> _pool;
+        public readonly T item;
+        public Pooled(T item, Pool<T> pool)
+        {
+            this.item = item;
+            _pool = pool;
+        }
+
+        private bool disposedValue = false;
+        public void Dispose()
+        {
+            if (!disposedValue)
+            {
+                _pool.Return(item);
+                disposedValue = true;
+            }
+        }
     }
 }

@@ -21,19 +21,10 @@ namespace Pooling.AppConsole
                 {
                     var task = Task.Run(() =>
                     {
-
-                        List<long> list = null;
-
-                        try
+                        using (var pooledList = bigListPool.Rent())
                         {
-                            list = bigListPool.Rent();
+                            var list = pooledList.item;
                         }
-                        finally
-                        {
-                            if (list != null)
-                                bigListPool.Return(list);
-                        }
-
                     });
 
                     tl.Add(task);
