@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -7,7 +8,7 @@ namespace Pooling
 {
     public sealed class Pool<T>
     {
-        readonly ConcurrentBag<T> _items = new ConcurrentBag<T>();
+        readonly List<T> _items = new List<T>();
         readonly Func<T> _itemCreator = null;
         readonly Action<T> _itemClearer = null;
         readonly int _maxItems;
@@ -28,39 +29,21 @@ namespace Pooling
                 ?? throw new ArgumentNullException(nameof(itemClearer));
         }
 
-        public Pooled<T> Rent()
+        public Pooled Rent()
         {
             T rented;
-
-            if (_items.TryTake(out var item))
-                rented = item;
-            else
-                rented = _itemCreator();
-
-            return new Pooled<T>(rented, this);
-        }
-
-        public bool TryReturn(T item)
-        {
-            bool isPooled = false;
             bool lockTaken = false;
-
             try
             {
                 _lock.Enter(ref lockTaken);
 
-                var isContains = _items.Contains(item);
-                var count = Count();
-
-                if (count < _maxItems && !isContains)
+                if (_items.Any())
                 {
-                    _itemClearer?.Invoke(item);
-                    _items.Add(item);
-
-                    isPooled = true;
+                    rented = _items[0];
+                    _items.RemoveAt(0);
                 }
-                else if (isContains)
-                    _itemClearer?.Invoke(item);
+                else
+                    rented = _itemCreator();
             }
             finally
             {
@@ -68,9 +51,47 @@ namespace Pooling
                     _lock.Exit();
             }
 
-            return isPooled;
+            return new Pooled(rented, this);
         }
 
-        public int Count() => _items.Count;
+        public int Count => _items.Count;
+
+        public class Pooled : IDisposable
+        {
+            readonly Pool<T> _pool;
+            public readonly T item;
+            public Pooled(T item, Pool<T> pool)
+            {
+                this.item = item;
+                _pool = pool;
+            }
+
+            bool disposedValue = false;
+            public void Dispose()
+            {
+                bool lockTaken = false;
+                try
+                {
+                    _pool._lock.Enter(ref lockTaken);
+
+                    var dValue = Volatile.Read(ref disposedValue);
+                    if (!dValue)
+                    {
+                        Volatile.Write(ref disposedValue, true);
+
+                        if (_pool.Count < _pool._maxItems)
+                        {
+                            _pool._itemClearer?.Invoke(item);
+                            _pool._items.Add(item);
+                        }
+                    }
+                }
+                finally
+                {
+                    if (lockTaken)
+                        _pool._lock.Exit();
+                }
+            }
+        }
     }
 }
