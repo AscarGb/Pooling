@@ -40,28 +40,37 @@ namespace Pooling
             return new Pooled<T>(rented, this);
         }
 
-        public void Return(T item)
+        public bool TryReturn(T item)
         {
+            bool isPooled = false;
             bool lockTaken = false;
+
             try
             {
                 _lock.Enter(ref lockTaken);
 
-                if (Count < _maxItems)
+                var isContains = _items.Contains(item);
+                var count = Count();
+
+                if (count < _maxItems && !isContains)
                 {
                     _itemClearer?.Invoke(item);
+                    _items.Add(item);
 
-                    if (!_items.Contains(item))
-                        _items.Add(item);
+                    isPooled = true;
                 }
+                else if (isContains)
+                    _itemClearer?.Invoke(item);
             }
             finally
             {
                 if (lockTaken)
                     _lock.Exit();
             }
+
+            return isPooled;
         }
 
-        public int Count => _items.Count;
+        public int Count() => _items.Count;
     }
 }

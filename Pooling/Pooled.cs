@@ -19,7 +19,7 @@ namespace Pooling
         {
             if (!disposedValue)
             {
-                _pool.Return(item);
+                _pool.TryReturn(item);
                 disposedValue = true;
             }
         }

@@ -25,7 +25,7 @@ namespace Pooling.AppConsole
                         using (var pooledList = bigListPool.Rent())
                         {                            
                             var list = pooledList.item;
-                            await Task.Delay(1000);
+                            await Task.Delay(1000);                           
                         }
                     });
 
@@ -34,7 +34,7 @@ namespace Pooling.AppConsole
 
                 await Task.WhenAll(tl);
 
-                Console.WriteLine(bigListPool.Count);
+                Console.WriteLine(bigListPool.Count());
             });
 
             Console.ReadLine();
